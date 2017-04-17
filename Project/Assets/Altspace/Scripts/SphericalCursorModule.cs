@@ -24,30 +24,50 @@ public class SphericalCursorModule : MonoBehaviour {
 	private const float MaxDistance = 100.0f;
 
 	// Sphere radius to project cursor onto if no raycast hit.
-	private const float SphereRadius = 1000.0f;
+	private const float SphereRadius = 12.0f;
+
+	// Mouse position
+	private Vector3 mousePosition;
 
     void Awake() {
 		Cursor = transform.Find("Cursor").gameObject;
 		CursorMeshRenderer = Cursor.transform.GetComponentInChildren<MeshRenderer>();
-        CursorMeshRenderer.renderer.material.color = new Color(0.0f, 0.8f, 1.0f);
+        CursorMeshRenderer.GetComponent<Renderer>().material.color = new Color(0.0f, 0.8f, 1.0f);
+
+		Vector3 mousePos = Cursor.transform.position;
+		mousePosition = mousePos;
     }	
 
 	void Update()
 	{
 		// TODO: Handle mouse movement to update cursor position.
+		mousePosition.x += Input.GetAxis ("Mouse X") * Sensitivity;
+		mousePosition.y += Input.GetAxis ("Mouse Y") * Sensitivity;
 
 		// TODO: Perform ray cast to find object cursor is pointing at.
+		Vector3 origin = Camera.main.transform.position;
+		Vector3 direction = (mousePosition - Camera.main.transform.position).normalized;
+		Ray ray = new Ray (origin, direction);
+		mousePosition = ray.GetPoint (SphereRadius);
+
+		
 		// TODO: Update cursor transform.
 		var cursorHit = new RaycastHit();/* Your cursor hit code should set this properly. */;
+		Physics.Raycast (ray, out cursorHit, MaxDistance, ColliderMask);
+		Cursor.transform.position = mousePosition;
+		
 
 		// Update highlighted object based upon the raycast.
 		if (cursorHit.collider != null)
 		{
 			Selectable.CurrentSelection = cursorHit.collider.gameObject;
+			float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
+			Cursor.transform.localScale = new Vector3(geoScale, geoScale, geoScale);
 		}
 		else
 		{
 			Selectable.CurrentSelection = null;
+			Cursor.transform.localScale = DefaultCursorScale;
 		}
 	}
 }
