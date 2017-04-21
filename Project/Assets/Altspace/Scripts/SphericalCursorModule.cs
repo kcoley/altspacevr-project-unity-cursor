@@ -11,6 +11,8 @@ public class SphericalCursorModule : MonoBehaviour {
 	// The furniture in the room is in layer 8, everything else is not.
 	private const int ColliderMask = (1 << 8);
 
+	private const int FloorColliderMask = (1 << 10);
+
 	// This is the Cursor game object. Your job is to update its transform on each frame.
 	private GameObject Cursor;
 
@@ -26,36 +28,36 @@ public class SphericalCursorModule : MonoBehaviour {
 	// Sphere radius to project cursor onto if no raycast hit.
 	private const float SphereRadius = 12.0f;
 
-	// Mouse position
-	private Vector3 mousePosition;
+
 
     void Awake() {
 		Cursor = transform.Find("Cursor").gameObject;
 		CursorMeshRenderer = Cursor.transform.GetComponentInChildren<MeshRenderer>();
         CursorMeshRenderer.GetComponent<Renderer>().material.color = new Color(0.0f, 0.8f, 1.0f);
 
-		Vector3 mousePos = Cursor.transform.position;
-		mousePosition = mousePos;
+		Vector3 mousePosition = Cursor.transform.position;
+		mousePosition.z = SphereRadius;
+		Cursor.transform.position = mousePosition;
+
     }	
 
 	void Update()
 	{
 		// TODO: Handle mouse movement to update cursor position.
-		mousePosition.x += Input.GetAxis ("Mouse X") * Sensitivity;
-		mousePosition.y += Input.GetAxis ("Mouse Y") * Sensitivity;
+		Cursor.transform.RotateAround (Camera.main.transform.position, Vector3.up, Input.GetAxis ("Mouse X") * Sensitivity);
+		Cursor.transform.RotateAround (Camera.main.transform.position, Vector3.left, Input.GetAxis ("Mouse Y") * Sensitivity);
 
 		// TODO: Perform ray cast to find object cursor is pointing at.
 		Vector3 origin = Camera.main.transform.position;
-		Vector3 direction = (mousePosition - Camera.main.transform.position).normalized;
+		Vector3 direction = (Cursor.transform.position - Camera.main.transform.position).normalized;
+
 		Ray ray = new Ray (origin, direction);
-		mousePosition = ray.GetPoint (SphereRadius);
 
 		
 		// TODO: Update cursor transform.
 		var cursorHit = new RaycastHit();/* Your cursor hit code should set this properly. */;
 		Physics.Raycast (ray, out cursorHit, MaxDistance, ColliderMask);
-		Cursor.transform.position = mousePosition;
-		
+	
 
 		// Update highlighted object based upon the raycast.
 		if (cursorHit.collider != null)
@@ -68,6 +70,16 @@ public class SphericalCursorModule : MonoBehaviour {
 		{
 			Selectable.CurrentSelection = null;
 			Cursor.transform.localScale = DefaultCursorScale;
+
+			if (Input.GetMouseButtonDown(0)) {
+				Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask);
+
+				if (cursorHit.collider != null) {
+					Debug.Log ("Hit floor");
+					Vector3 offset = cursorHit.point - origin;
+					Camera.main.transform.position = new Vector3(cursorHit.point.x, origin.y, cursorHit.point.z);
+				}
+			}
 		}
 	}
 }
