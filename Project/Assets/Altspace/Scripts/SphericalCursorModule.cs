@@ -18,7 +18,7 @@ public class SphericalCursorModule : MonoBehaviour {
 	private MeshRenderer CursorMeshRenderer;
 
 	// This is the scale to set the cursor to if no ray hit is found.
-	private Vector3 DefaultCursorScale = new Vector3(10.0f, 10.0f, 10.0f);
+	private Vector3 DefaultCursorScale = new Vector3(7.0f, 7.0f, 7.0f);
 
 	// Maximum distance to ray cast.
 	private const float MaxDistance = 100.0f;
