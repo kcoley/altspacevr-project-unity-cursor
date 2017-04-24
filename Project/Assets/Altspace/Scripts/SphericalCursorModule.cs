@@ -28,6 +28,9 @@ public class SphericalCursorModule : MonoBehaviour {
 	// Sphere radius to project cursor onto if no raycast hit.
 	private const float SphereRadius = 12.0f;
 
+	// floor sprite
+	public GameObject FloorSprite;
+
 
 
     void Awake() {
@@ -39,11 +42,15 @@ public class SphericalCursorModule : MonoBehaviour {
 		mousePosition.z = SphereRadius;
 		Cursor.transform.position = mousePosition;
 
+		//FloorSprite = transform.Find ("FloorSelector").gameObject;
+
     }	
 
 	void Update()
 	{
 		// TODO: Handle mouse movement to update cursor position.
+		FloorSprite.GetComponent<Renderer> ().enabled = false;
+
 		Cursor.transform.RotateAround (Camera.main.transform.position, Vector3.up, Input.GetAxis ("Mouse X") * Sensitivity);
 		Cursor.transform.RotateAround (Camera.main.transform.position, Vector3.left, Input.GetAxis ("Mouse Y") * Sensitivity);
 
@@ -65,19 +72,30 @@ public class SphericalCursorModule : MonoBehaviour {
 			Selectable.CurrentSelection = cursorHit.collider.gameObject;
 			float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
 			Cursor.transform.localScale = new Vector3(geoScale, geoScale, geoScale);
+
 		}
 		else
 		{
 			Selectable.CurrentSelection = null;
 			Cursor.transform.localScale = DefaultCursorScale;
+			if (Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask)) {
+				FloorSprite.GetComponent<Renderer> ().enabled = true;
+				Vector3 floorSpritePosition = cursorHit.point;
+				FloorSprite.transform.position = floorSpritePosition;
+
+			} 
 
 			if (Input.GetMouseButtonDown(0)) {
 				Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask);
 
 				if (cursorHit.collider != null) {
 					Debug.Log ("Hit floor");
+
+
+
 					Vector3 offset = cursorHit.point - origin;
 					Camera.main.transform.position = new Vector3(cursorHit.point.x, origin.y, cursorHit.point.z);
+
 				}
 			}
 		}

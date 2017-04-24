@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Altspace\Shaders\CursorShader.shader" />
+    <None Include="Assets\Altspace\Shaders\GroundCursorShader.shader" />
     <None Include="Assets\Standard Assets\Glass Refraction (Pro Only)\Sources\Shaders\Glass-Stained-BumpDistort.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2013\UnityVS.CSharp.targets" />
