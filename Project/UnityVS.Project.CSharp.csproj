@@ -89,6 +89,7 @@
   <ItemGroup>
     <Compile Include="Assets\Altspace\Scripts\LockCursor.cs" />
     <Compile Include="Assets\Altspace\Scripts\SphericalCursorModule.cs" />
+    <Compile Include="Assets\Altspace\Scripts\TeleportModule.cs" />
     <Compile Include="Assets\Selectable.cs" />
   </ItemGroup>
   <ItemGroup>

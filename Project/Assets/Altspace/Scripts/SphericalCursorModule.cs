@@ -9,7 +9,7 @@ public class SphericalCursorModule : MonoBehaviour {
 	
 	// This is the layer mask to use when performing the ray cast for the objects.
 	// The furniture in the room is in layer 8, everything else is not.
-	private const int ColliderMask = (1 << 8);
+	private const int FurnitureColliderMask = (1 << 8);
 
 	private const int FloorColliderMask = (1 << 10);
 
@@ -42,8 +42,6 @@ public class SphericalCursorModule : MonoBehaviour {
 		mousePosition.z = SphereRadius;
 		Cursor.transform.position = mousePosition;
 
-		//FloorSprite = transform.Find ("FloorSelector").gameObject;
-
     }	
 
 	void Update()
@@ -63,7 +61,7 @@ public class SphericalCursorModule : MonoBehaviour {
 		
 		// TODO: Update cursor transform.
 		var cursorHit = new RaycastHit();/* Your cursor hit code should set this properly. */;
-		Physics.Raycast (ray, out cursorHit, MaxDistance, ColliderMask);
+		Physics.Raycast (ray, out cursorHit, MaxDistance, FurnitureColliderMask);
 	
 
 		// Update highlighted object based upon the raycast.
@@ -82,22 +80,8 @@ public class SphericalCursorModule : MonoBehaviour {
 				FloorSprite.GetComponent<Renderer> ().enabled = true;
 				Vector3 floorSpritePosition = cursorHit.point;
 				FloorSprite.transform.position = floorSpritePosition;
-
 			} 
 
-			if (Input.GetMouseButtonDown(0)) {
-				Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask);
-
-				if (cursorHit.collider != null) {
-					Debug.Log ("Hit floor");
-
-
-
-					Vector3 offset = cursorHit.point - origin;
-					Camera.main.transform.position = new Vector3(cursorHit.point.x, origin.y, cursorHit.point.z);
-
-				}
-			}
 		}
 	}
 }
