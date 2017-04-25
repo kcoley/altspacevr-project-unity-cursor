@@ -31,8 +31,11 @@ public class SphericalCursorModule : MonoBehaviour {
 	// floor sprite
 	public GameObject FloorSprite;
 
+	// The threshold rotation angle
 	private float rotationAngle = 45.0f;
-	private float maxAngleDiff = 2.0f;
+	//The max rotation angle difference from the cursor angle
+	private float maxRotAngleDiff = 2.0f;
+
 
 
 
@@ -49,25 +52,24 @@ public class SphericalCursorModule : MonoBehaviour {
 
 	void Update()
 	{
-		// TODO: Handle mouse movement to update cursor position.
+		// Handle mouse movement to update cursor position.
 		FloorSprite.GetComponent<Renderer> ().enabled = false;
 
 		Cursor.transform.RotateAround (Camera.main.transform.position, transform.up, Input.GetAxis ("Mouse X") * Sensitivity);
 		Cursor.transform.RotateAround (Camera.main.transform.position, -transform.right, Input.GetAxis ("Mouse Y") * Sensitivity);
 
-		// TODO: Perform ray cast to find object cursor is pointing at.
+		// Perform ray cast to find object cursor is pointing at.
 		Vector3 origin = Camera.main.transform.position;
 		Vector3 direction = (Cursor.transform.position - Camera.main.transform.position).normalized;
 
 		Ray ray = new Ray (origin, direction);
 
-		
-		// TODO: Update cursor transform.
 		var cursorHit = new RaycastHit();/* Your cursor hit code should set this properly. */;
 		Physics.Raycast (ray, out cursorHit, MaxDistance, FurnitureColliderMask);
 
 		// Rotate player based on cursor
 		rotatePlayer(ray);
+		capCursorHeight (ray);
 
 		// Update highlighted object based upon the raycast.
 		if (cursorHit.collider != null)
@@ -75,7 +77,6 @@ public class SphericalCursorModule : MonoBehaviour {
 			Selectable.CurrentSelection = cursorHit.collider.gameObject;
 			float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
 			Cursor.transform.localScale = new Vector3(geoScale, geoScale, geoScale);
-
 		}
 
 		else
@@ -89,14 +90,13 @@ public class SphericalCursorModule : MonoBehaviour {
 				Vector3 floorSpritePosition = cursorHit.point;
 				FloorSprite.transform.position = floorSpritePosition;
 			} 
-
 		}
 	}
 
 	void rotatePlayer(Ray ray) {
 		/*
 		 * Rotates the camera based on the cursor's distance to the edge of the screen.
-		 * The rotation speed is limited by the maxAngleDiff, which is the maximum allowed angle from
+		 * The rotation speed is limited by the maxRotAngleDiff, which is the maximum allowed angle from
 		 * the transform forward direction and the cursor ray.  If too great, the cursor rotation
 		 * will get corrected to the max angle.
 		 *
@@ -108,13 +108,23 @@ public class SphericalCursorModule : MonoBehaviour {
 			if (Vector3.Dot (ray.direction, transform.right) < 0) {
 				sign = -1.0f;
 			}
-			if (angleDiff > maxAngleDiff) {
-				Cursor.transform.RotateAround (Camera.main.transform.position, transform.up, -sign * (angleDiff - maxAngleDiff));
-				angleDiff = maxAngleDiff;
+			if (angleDiff > maxRotAngleDiff) {
+				Cursor.transform.RotateAround (Camera.main.transform.position, transform.up, -sign * (angleDiff - maxRotAngleDiff));
+				angleDiff = maxRotAngleDiff;
 			}
 			Camera.main.transform.RotateAround(Camera.main.transform.position, Vector3.up, sign * angleDiff);
 		}
+	}
 
+	void capCursorHeight(Ray ray) {
+		/*
+		 * This function caps the height of the cursor in screen space
+		 */
+		Vector3 cursorPosition = Camera.main.WorldToScreenPoint(Cursor.transform.position);
+
+		cursorPosition.y = Mathf.Clamp (cursorPosition.y, 0, Screen.height);
+		cursorPosition = Camera.main.ScreenToWorldPoint (cursorPosition);
+		Cursor.transform.position = cursorPosition;
 
 	}
 }

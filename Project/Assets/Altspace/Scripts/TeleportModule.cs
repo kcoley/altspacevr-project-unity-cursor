@@ -29,11 +29,10 @@ public class TeleportModule : MonoBehaviour {
 		Vector3 direction = (Cursor.transform.position - Camera.main.transform.position).normalized;
 
 		Ray ray = new Ray (origin, direction);
-		var cursorHit = new RaycastHit();/* Your cursor hit code should set this properly. */;
+		var cursorHit = new RaycastHit();
 		if (Input.GetMouseButtonDown(0)) {
 			if (!Physics.Raycast (ray, out cursorHit, MaxDistance, FurnitureColliderMask)) {
 				if (Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask)) {
-					//Camera.main.transform.position = new Vector3 (cursorHit.point.x, origin.y, cursorHit.point.z);
 					FPC.transform.position = new Vector3 (cursorHit.point.x, FPC.transform.position.y, cursorHit.point.z);
 				}
 			}
