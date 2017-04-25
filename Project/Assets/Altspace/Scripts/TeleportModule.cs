@@ -5,6 +5,7 @@ using UnityEngine;
 public class TeleportModule : MonoBehaviour {
 	// This is the Cursor game object. 
 	private GameObject Cursor;
+	private GameObject FPC;
 
 	// Maximum distance to ray cast.
 	private const float MaxDistance = 100.0f;
@@ -19,6 +20,7 @@ public class TeleportModule : MonoBehaviour {
 	// Use this for initialization
 	void Awake () {
 		Cursor = transform.Find("Cursor").gameObject;
+		FPC = transform.parent.gameObject;
 		
 	}
 
@@ -31,7 +33,8 @@ public class TeleportModule : MonoBehaviour {
 		if (Input.GetMouseButtonDown(0)) {
 			if (!Physics.Raycast (ray, out cursorHit, MaxDistance, FurnitureColliderMask)) {
 				if (Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask)) {
-					Camera.main.transform.position = new Vector3 (cursorHit.point.x, origin.y, cursorHit.point.z);
+					//Camera.main.transform.position = new Vector3 (cursorHit.point.x, origin.y, cursorHit.point.z);
+					FPC.transform.position = new Vector3 (cursorHit.point.x, FPC.transform.position.y, cursorHit.point.z);
 				}
 			}
 		}

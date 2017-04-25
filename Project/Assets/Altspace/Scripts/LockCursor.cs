@@ -4,7 +4,7 @@ using System.Collections;
 public class LockCursor : MonoBehaviour {
 	void Update ()
 	{
-		Screen.lockCursor = true;
+		Cursor.lockState = CursorLockMode.Locked;
 
 		if (Input.GetKey(KeyCode.Escape))
 		{
