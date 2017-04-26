@@ -36,6 +36,11 @@ public class SphericalCursorModule : MonoBehaviour {
 	//The max rotation angle difference from the cursor angle
 	private float maxRotAngleDiff = 2.0f;
 
+    //private reference to a selected gameobject
+    private GameObject selectedGameObject;
+    private float selectedGameObjectRadius;
+    private Vector3 selectedGameObjectOffset;
+
 
 
 
@@ -47,6 +52,8 @@ public class SphericalCursorModule : MonoBehaviour {
 		Vector3 mousePosition = Cursor.transform.position;
 		mousePosition.z = SphereRadius;
 		Cursor.transform.position = mousePosition;
+
+        selectedGameObject = null;
 
     }	
 
@@ -71,12 +78,34 @@ public class SphericalCursorModule : MonoBehaviour {
 		rotatePlayer(ray);
 		capCursorHeight (ray);
 
-		// Update highlighted object based upon the raycast.
-		if (cursorHit.collider != null)
+        // Update highlighted object based upon the raycast.
+        if (selectedGameObject != null)
+        {
+            if (Input.GetMouseButtonUp(0))
+            {
+                selectedGameObject = null;
+                Debug.Log("Released game object");
+            }
+            else
+            {
+                selectedGameObject.transform.position = ray.GetPoint(selectedGameObjectRadius) - selectedGameObjectOffset;
+            }
+        }
+        if (cursorHit.collider != null)
 		{
 			Selectable.CurrentSelection = cursorHit.collider.gameObject;
 			float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
 			Cursor.transform.localScale = new Vector3(geoScale, geoScale, geoScale);
+
+            if (selectedGameObject == null && Input.GetMouseButtonDown(0))
+            {
+                //Calculate the scalar project to get the horizontal distance to the object
+                selectedGameObjectRadius = Vector3.Project(cursorHit.point - ray.origin, transform.forward).magnitude;
+                selectedGameObject = cursorHit.collider.gameObject;
+                selectedGameObjectOffset = cursorHit.point - selectedGameObject.transform.position;
+                Debug.Log("Selected game object");
+         
+            }
 		}
 
 		else
