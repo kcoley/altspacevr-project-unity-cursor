@@ -91,7 +91,7 @@ public class SphericalCursorModule : MonoBehaviour {
                 selectedGameObject.transform.position = ray.GetPoint(selectedGameObjectRadius) - selectedGameObjectOffset;
             }
         }
-        if (cursorHit.collider != null)
+        else if (cursorHit.collider != null)
 		{
 			Selectable.CurrentSelection = cursorHit.collider.gameObject;
 			float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
