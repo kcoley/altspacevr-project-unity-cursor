@@ -53,6 +53,7 @@
      <None Include="Assets\Standard Assets\Glass Refraction (Pro Only)\Sources\Shaders\Glass-Stained-BumpDistort.shader" />
      <None Include="Assets\Altspace\Shaders\CursorShader.shader" />
      <None Include="Assets\Altspace\Shaders\GroundCursorShader.shader" />
+     <None Include="Assets\Altspace\Shaders\IntersectionShader.compute" />
  <Reference Include="Assembly-UnityScript-firstpass">
  <HintPath>/Users/kacey/dev/altspacevr_project_unity_cursor/altspacevr-project-unity-cursor/Project/Library/ScriptAssemblies/Assembly-UnityScript-firstpass.dll</HintPath>
  </Reference>
