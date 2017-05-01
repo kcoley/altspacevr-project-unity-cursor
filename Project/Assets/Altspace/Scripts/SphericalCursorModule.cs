@@ -36,15 +36,25 @@ public class SphericalCursorModule : MonoBehaviour {
 	//The max rotation angle difference from the cursor angle
 	private float maxRotAngleDiff = 2.0f;
 
+	//Reference to the GlobalTransformModeObject
+
     //private reference to a selected gameobject
     private GameObject selectedGameObject;
-    private float selectedGameObjectRadius;
     private Vector3 selectedGameObjectOffset;
+	private Vector3 selectedGameObjectFloorOffset;
+
+	private TransformModeHandler transformModeHandler;
+
+	// smallest size for scaled game object
+	public Vector3 minScale = new Vector3(0.1f, 0.1f, 0.1f);
 
 
+	// Rotation speed for rotating game object
+	public float rotationSpeed = 10.0f;
 
 
     void Awake() {
+		transformModeHandler = transform.Find ("HUD").gameObject.GetComponent<TransformModeHandler>();
 		Cursor = transform.Find("Cursor").gameObject;
 		CursorMeshRenderer = Cursor.transform.GetComponentInChildren<MeshRenderer>();
         CursorMeshRenderer.GetComponent<Renderer>().material.color = new Color(0.0f, 0.8f, 1.0f);
@@ -54,7 +64,6 @@ public class SphericalCursorModule : MonoBehaviour {
 		Cursor.transform.position = mousePosition;
 
         selectedGameObject = null;
-
     }	
 
 	void Update()
@@ -74,55 +83,89 @@ public class SphericalCursorModule : MonoBehaviour {
 		var cursorHit = new RaycastHit();/* Your cursor hit code should set this properly. */;
 		Physics.Raycast (ray, out cursorHit, MaxDistance, FurnitureColliderMask);
 
-		// Rotate player based on cursor
-		rotatePlayer(ray);
+		// Rotate camera based on cursor
+		if (transformModeHandler.transformMode == TransformModeHandler.TransformModes.Rotate && selectedGameObject != null) {	
+			capCursorWidth (ray);
+		} else {
+			rotateCamera (ray);
+		}
 		capCursorHeight (ray);
 
-        // Update highlighted object based upon the raycast.
+        
+		// Updated the selected game object
         if (selectedGameObject != null)
         {
             if (Input.GetMouseButtonUp(0))
             {
-                selectedGameObject = null;
-                Debug.Log("Released game object");
+				// Release the selected object
+				releaseSelectedObject ();
             }
-            else
+            else // The selected object is still being held.  Handle translation, rotation and scale modes
             {
-                selectedGameObject.transform.position = ray.GetPoint(selectedGameObjectRadius) - selectedGameObjectOffset;
+				switch (transformModeHandler.transformMode) 
+				{
+					case TransformModeHandler.TransformModes.Translate:
+						bool didHitFloor = false;
+						Vector3 floorIntersectionPoint = getFloorIntersectionPoint (ray, out didHitFloor);
+						if (didHitFloor) {
+							translateSelectedObject (floorIntersectionPoint);
+						}
+						break;
+					case TransformModeHandler.TransformModes.Rotate:
+						rotateSelectedObject (ray);
+						break;
+					case TransformModeHandler.TransformModes.Scale:
+						scaleSelectedObject ();
+						break;
+				}
             }
         }
-        else if (cursorHit.collider != null)
+		// Update highlighted object based upon the raycast.
+		else if (cursorHit.collider != null)
 		{
-			Selectable.CurrentSelection = cursorHit.collider.gameObject;
-			float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
-			Cursor.transform.localScale = new Vector3(geoScale, geoScale, geoScale);
+			if (Input.GetMouseButtonUp (0)) {
+				float geoScale = (cursorHit.distance * DistanceScaleFactor + 1.0f)/2.0f;
+				// Scale the cursor size
+				Cursor.transform.localScale = new Vector3(geoScale, geoScale, geoScale);
+			}
 
+			Selectable.CurrentSelection = cursorHit.collider.gameObject;
+
+
+
+			// The user has selected an object.  Calculate the ground plane vector offset from the 
+			// floor intersection point and the selected object.
             if (selectedGameObject == null && Input.GetMouseButtonDown(0))
             {
-                //Calculate the scalar project to get the horizontal distance to the object
-                selectedGameObjectRadius = Vector3.Project(cursorHit.point - ray.origin, transform.forward).magnitude;
-                selectedGameObject = cursorHit.collider.gameObject;
-                selectedGameObjectOffset = cursorHit.point - selectedGameObject.transform.position;
-                Debug.Log("Selected game object");
-         
+				selectObject(cursorHit.collider.gameObject, cursorHit.point);
+				bool didHitFloor;
+				Vector3 floorIntersectionPoint = getFloorIntersectionPoint (ray, out didHitFloor);
+				if (didHitFloor) {
+
+					Vector3 cursorHitGroundPoint = cursorHit.point;
+					cursorHitGroundPoint.y = floorIntersectionPoint.y;
+					selectedGameObjectFloorOffset = floorIntersectionPoint - cursorHitGroundPoint;
+				} else {
+					// TODO: Need to handle the case where the object is selected above the floor plane better.
+				}
             }
 		}
 
 		else
 		{
-			Selectable.CurrentSelection = null;
 			Cursor.transform.localScale = DefaultCursorScale;
+			Selectable.CurrentSelection = null;
 
 			// Display Floor Sprite if ray hits the floor
-			if (Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask)) {
-				FloorSprite.GetComponent<Renderer> ().enabled = true;
-				Vector3 floorSpritePosition = cursorHit.point;
+			bool didHitFloor;
+			Vector3 floorSpritePosition = getFloorIntersectionPoint(ray, out didHitFloor);
+			if (didHitFloor) {
 				FloorSprite.transform.position = floorSpritePosition;
-			} 
+			}
 		}
 	}
 
-	void rotatePlayer(Ray ray) {
+	void rotateCamera(Ray ray) {
 		/*
 		 * Rotates the camera based on the cursor's distance to the edge of the screen.
 		 * The rotation speed is limited by the maxRotAngleDiff, which is the maximum allowed angle from
@@ -145,15 +188,111 @@ public class SphericalCursorModule : MonoBehaviour {
 		}
 	}
 
+	Vector3 getFloorIntersectionPoint(Ray ray, out bool didHitFloor) {
+		/*
+		 * Intersects with the ground plane and returns a bool indicating whether it hit the floor or not
+		 */
+		Vector3 floorIntersectionPoint = Vector3.zero;
+		didHitFloor = false;
+		var cursorHit = new RaycastHit ();
+
+		if (Physics.Raycast (ray, out cursorHit, MaxDistance, FloorColliderMask)) {
+			FloorSprite.GetComponent<Renderer> ().enabled = true;
+			floorIntersectionPoint = cursorHit.point;
+			didHitFloor = true;
+		} 
+
+		return floorIntersectionPoint;
+
+	}
+
 	void capCursorHeight(Ray ray) {
+		/*
+		 * This function caps the height of the cursor in screen space
+		 * We will calculate a new ray direction within screen space
+		 */
+
+		Vector3 cursorPosition = Camera.main.WorldToViewportPoint(Cursor.transform.position);
+
+
+		cursorPosition.y = Mathf.Clamp01 (cursorPosition.y);
+		cursorPosition.x = Mathf.Clamp01 (cursorPosition.x);
+		cursorPosition = Camera.main.ViewportToWorldPoint (cursorPosition);
+		ray.direction = (cursorPosition - ray.origin).normalized;
+		ray.GetPoint (SphereRadius);
+		Cursor.transform.position = ray.GetPoint (SphereRadius);
+
+	}
+	void capCursorWidth(Ray ray) {
 		/*
 		 * This function caps the height of the cursor in screen space
 		 */
 		Vector3 cursorPosition = Camera.main.WorldToScreenPoint(Cursor.transform.position);
 
-		cursorPosition.y = Mathf.Clamp (cursorPosition.y, 0, Screen.height);
+		cursorPosition.x = Mathf.Clamp (cursorPosition.x, 0, Screen.width);
 		cursorPosition = Camera.main.ScreenToWorldPoint (cursorPosition);
 		Cursor.transform.position = cursorPosition;
+
+	}
+
+	void releaseSelectedObject() {
+		/*
+		 * releases the selected game object
+		 */
+		selectedGameObject.transform.GetComponent<Rigidbody> ().freezeRotation = false;
+		selectedGameObject = null;
+	}
+
+	void selectObject(GameObject obj, Vector3 hitPoint) {
+		/*
+		 * Grabs the selected object
+		 */
+
+		//Calculate the scalar project to get the horizontal distance to the object
+		selectedGameObject = obj;
+		selectedGameObjectOffset = hitPoint - selectedGameObject.transform.position;
+		selectedGameObject.transform.GetComponent<Rigidbody> ().freezeRotation = true;
+
+	}
+		
+	void translateSelectedObject(Vector3 floorIntersectionPoint) {
+		/*
+		 * Translates the game object based on a floor intersection point and an vector offset, plus project upwards from the ground plane
+		 */
+		selectedGameObjectOffset.y = selectedGameObject.GetComponent<BoxCollider> ().bounds.size.y;
+		Vector3 selectedGameObjectHeight = new Vector3 (0, selectedGameObject.GetComponent<BoxCollider> ().bounds.size.y, 0);
+		selectedGameObject.transform.position = floorIntersectionPoint - selectedGameObjectFloorOffset + selectedGameObjectHeight;
+		FloorSprite.transform.position = floorIntersectionPoint - selectedGameObjectFloorOffset;
+
+	}
+
+	void rotateSelectedObject(Ray ray) {
+		/*
+		 * Rotates the game object based on the mouse x and mouse y world space positions
+		 */
+		capCursorWidth (ray);
+		float xRotation = Input.GetAxis ("Mouse X") * rotationSpeed * Mathf.Deg2Rad;
+		float yRotation = Input.GetAxis ("Mouse Y") * rotationSpeed * Mathf.Deg2Rad;
+
+		selectedGameObject.transform.Rotate(Vector3.up, -xRotation, Space.World);
+		selectedGameObject.transform.Rotate(Vector3.right, yRotation, Space.World);
+
+	}
+
+	void scaleSelectedObject() {
+		/*
+		 * Scale Game object based on the mouse x axis value
+		 * The minimum size is set with the public minScale Vector
+		 */
+		Vector3 s = selectedGameObject.transform.localScale;
+		float scaleValue = -Input.GetAxis ("Mouse X");
+
+		Vector3 scaleDifference = new Vector3 (scaleValue, scaleValue, scaleValue);
+		Vector3 newScale = s - scaleDifference;
+		if (newScale.x >= minScale.x && newScale.y >= minScale.y && newScale.z >= minScale.z) {
+			selectedGameObject.transform.localScale = newScale;
+		}
+
 
 	}
 }
