@@ -32,7 +32,7 @@ public class SphericalCursorModule : MonoBehaviour {
 	public GameObject FloorSprite;
 
 	// The threshold rotation angle
-	private float rotationAngle = 45.0f;
+	private float rotationAngle = 35.0f;
 	//The max rotation angle difference from the cursor angle
 	private float maxRotAngleDiff = 2.0f;
 
