@@ -54,7 +54,7 @@ public class SphericalCursorModule : MonoBehaviour {
 
 
     void Awake() {
-		transformModeHandler = transform.Find ("HUD").gameObject.GetComponent<TransformModeHandler>();
+		transformModeHandler = transform.Find ("TransformHandler").gameObject.GetComponent<TransformModeHandler>();
 		Cursor = transform.Find("Cursor").gameObject;
 		CursorMeshRenderer = Cursor.transform.GetComponentInChildren<MeshRenderer>();
         CursorMeshRenderer.GetComponent<Renderer>().material.color = new Color(0.0f, 0.8f, 1.0f);
@@ -150,7 +150,6 @@ public class SphericalCursorModule : MonoBehaviour {
 				}
             }
 		}
-
 		else
 		{
 			Cursor.transform.localScale = DefaultCursorScale;
